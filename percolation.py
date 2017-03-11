@@ -7,7 +7,7 @@ PERC_CONST =  0.592746
 # Apparently a triangle grid has a constant of exactly 1/2
 
 class Grid:
-	def __init__(self, fixedCount = True, n = GRID_SIZE):
+	def __init__(self, n = GRID_SIZE, fixedCount = True):
 		self.n = n
 		if fixedCount:
 			self.grid = self.fixedCountGrid(n)
@@ -15,8 +15,9 @@ class Grid:
 			self.grid = self.fixedProbGrid(n)
 		self.startNode = (-1,None)
 		self.endNode = (n,None)
+		self.hasPath = int(self.bfs())
 
-	def hasPath(self):
+	def bfs(self):
 		queue = [self.startNode]
 		visited = [self.startNode]
 		while len(queue) > 0:
@@ -39,7 +40,7 @@ class Grid:
 
 		neighbors = [(row, col+1), (row, col-1), (row+1, col), (row-1, col)]
 		neighbors = [(r,c) for (r,c) in neighbors if \
-			0 <= r < n and 0 <= c < n and self.isFilled(r,c)]
+					0 <= r < n and 0 <= c < n and self.isFilled(r,c)]
 		if row == 0:
 			neighbors.append(self.startNode)
 		if row == n-1:
@@ -61,14 +62,14 @@ class Grid:
 		return randGrid
 
 
-count = 0
-for i in range(50):
-	aoeu = Grid()
-	hasPath = aoeu.hasPath()
-	if hasPath:
-		count+=1
-	print hasPath
-print "Count:", count
+# count = 0
+# for i in range(50):
+# 	aoeu = Grid(GRID_SIZE, True)
+# 	hasPath = aoeu.hasPath
+# 	if hasPath:
+# 		count+=1
+# 	print hasPath
+# print "Count:", count
 
 
 
