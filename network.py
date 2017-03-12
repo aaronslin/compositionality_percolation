@@ -7,12 +7,12 @@ print "Finished importing modules."
 
 # Constants and Parameters
 
-GRID_SIZE = 16
+GRID_SIZE = 8
 FIXED_PERCOLATION_COUNT = True
 
-LEARN_RATE = 10
+LEARN_RATE = 1
 BATCH_SIZE = 128
-TRAIN_ITERATIONS = 100
+TRAIN_ITERATIONS = 50000
 
 n_input = GRID_SIZE * GRID_SIZE
 n_hidden = 256
@@ -33,19 +33,17 @@ def generate_batch(batch_size = BATCH_SIZE):
 trainInputs = tf.placeholder(tf.float32, shape=(None, n_input))
 trainLabels = tf.placeholder(tf.float32, shape=(None, n_output))
 
-# trainInputs, trainLabels = generate_batch()
-
 # Train inputs: flattened batch_size x n^2 array
 # Train labels: a batch_size x 1 array which is either a 1 (connected) or 0 (not)
 
 
 weights = {
-	"h1": tf.Variable(tf.random_normal([n_input, n_hidden])),
-	"out": tf.Variable(tf.random_normal([n_hidden, n_output]))
+	"h1": tf.Variable(tf.random_normal([n_input, n_hidden], mean=0, stddev=1./GRID_SIZE)),
+	"out": tf.Variable(tf.random_normal([n_hidden, n_output], mean=0, stddev=1./GRID_SIZE))
 }
 
 biases = {
-	"h1": tf.Variable(tf.random_normal([n_hidden])),
+	"h1": tf.Variable(tf.random_normal([n_hidden], mean=0, stddev=1./GRID_SIZE)),
 	"out": tf.Variable(tf.random_normal([n_output]))
 }
 
@@ -54,20 +52,19 @@ def shallow_model(x, weights, biases):
 	h1 = tf.nn.relu(h1)
 
 	out = tf.matmul(h1, weights["out"]) + biases["out"]
+	# The problem is here! In the first iteration, we get all these random numbers (e.g. +98, -200)
+	# And then a sigmoid basically deletes all of that noise
 	out = tf.sigmoid(out)
 	return out
 
 def compute_accuracy(predicted, actual):
-	# Inputs: batch_size x 1
-	print type(predicted)
-	print type(actual)
 	predicted = tf.round(predicted)
 	equality = tf.equal(predicted, actual)
 	return tf.reduce_mean(tf.cast(equality, tf.float32))
 
 def loss_optim_accuracy(model, x, y):
 	pred = model(x, weights, biases)
-	loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+	loss = tf.reduce_mean(tf.squared_difference(pred, y))
 	optimizer = tf.train.GradientDescentOptimizer(LEARN_RATE).minimize(loss)
 	accuracy = compute_accuracy(pred, y)
 
@@ -85,7 +82,7 @@ with tf.Session() as sess:
 
 		_, l, acc_train = sess.run([optimizer, loss, trainAcc], feed_dict)
 		if epoch % 10 ==0:
-			print epoch, "Train Acc:", acc_train, l
+			print epoch, "Train Acc:", acc_train, "\t", l
 
 
 
