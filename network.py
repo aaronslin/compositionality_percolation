@@ -1,3 +1,4 @@
+print "Importing modules..."
 from percolation import Grid
 import tensorflow as tf 
 import numpy as np 
@@ -6,10 +7,10 @@ print "Finished importing modules."
 
 # Constants and Parameters
 
-GRID_SIZE = 20
+GRID_SIZE = 16
 FIXED_PERCOLATION_COUNT = True
 
-LEARN_RATE = 0.1
+LEARN_RATE = 10
 BATCH_SIZE = 128
 TRAIN_ITERATIONS = 100
 
@@ -22,11 +23,8 @@ n_output = 1
 
 def generate_batch(batch_size = BATCH_SIZE):
 	grids = [Grid(GRID_SIZE, FIXED_PERCOLATION_COUNT) for i in range(batch_size)]
-	X = np.array([g.grid.reshape((-1,)) for g in grids])
-	Y = np.array([g.hasPath for g in grids]).astype(np.float32)
-	print X.shape
-	print Y.shape
-	print Y
+	X = np.array([g.grid.reshape((-1,)) for g in grids]).astype(np.float32)
+	Y = np.array([g.hasPath for g in grids]).reshape((-1,n_output)).astype(np.float32)
 	return X, Y
 
 
@@ -34,6 +32,8 @@ def generate_batch(batch_size = BATCH_SIZE):
 
 trainInputs = tf.placeholder(tf.float32, shape=(None, n_input))
 trainLabels = tf.placeholder(tf.float32, shape=(None, n_output))
+
+# trainInputs, trainLabels = generate_batch()
 
 # Train inputs: flattened batch_size x n^2 array
 # Train labels: a batch_size x 1 array which is either a 1 (connected) or 0 (not)
@@ -59,6 +59,8 @@ def shallow_model(x, weights, biases):
 
 def compute_accuracy(predicted, actual):
 	# Inputs: batch_size x 1
+	print type(predicted)
+	print type(actual)
 	predicted = tf.round(predicted)
 	equality = tf.equal(predicted, actual)
 	return tf.reduce_mean(tf.cast(equality, tf.float32))
@@ -73,18 +75,17 @@ def loss_optim_accuracy(model, x, y):
 
 loss, optimizer, trainAcc = loss_optim_accuracy(shallow_model, trainInputs, trainLabels)
 
-
-generate_batch(7)
-
 init = tf.initialize_all_variables()
 
 with tf.Session() as sess:
 	sess.run(init)
-	print "Initialized variables."
-
 	for epoch in range(TRAIN_ITERATIONS):
-		_, l, acc_train = sess.run([optimizer, loss, trainAcc])
-		print "Train Acc:", trainAcc
+		X, Y = generate_batch()
+		feed_dict = {trainInputs: X, trainLabels: Y}
+
+		_, l, acc_train = sess.run([optimizer, loss, trainAcc], feed_dict)
+		if epoch % 10 ==0:
+			print epoch, "Train Acc:", acc_train, l
 
 
 
